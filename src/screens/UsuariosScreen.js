@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Alerta from '../components/Alerta';
 import { mensajeError } from '../services/authService';
@@ -6,23 +6,27 @@ import { consultarUsuarios, observarUsuarios } from '../services/usuariosService
 import { colores } from '../styles/theme';
 
 export default function UsuariosScreen({ usuario }) {
+  const activo = useRef(false);
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
   const cargar = useCallback(async () => {
+    if (!usuario?.id) return;
     try {
       const datos = await consultarUsuarios();
-      setUsuarios(datos);
-      setError('');
-    } catch (e) { setError(mensajeError(e)); }
-    finally { setCargando(false); }
-  }, []);
+      if (activo.current) { setUsuarios(datos); setError(''); }
+    } catch (e) { if (activo.current) setError(mensajeError(e)); }
+    finally { if (activo.current) setCargando(false); }
+  }, [usuario?.id]);
 
   useEffect(() => {
-    cargar();
+    activo.current = true;
+    // La carga inicial termina asíncronamente al consultar Supabase.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void cargar();
     const cancelar = observarUsuarios(() => { cargar(); });
-    return cancelar;
+    return () => { activo.current = false; cancelar(); };
   }, [cargar]);
 
   return <View>

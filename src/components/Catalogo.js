@@ -1,17 +1,21 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import ProductoCard from './ProductoCard';
+import Boton from './Boton';
+import { filtrarProductos } from '../utils/catalogo';
 import { productos } from '../data/productos';
 import { colores } from '../styles/theme';
 
 const filtros = ['Todos', 'Tecnología', 'Hogar'];
 
-export default function Catalogo({ onRegistrarse }) {
+export default function Catalogo({ onRegistrarse, autenticado }) {
   const { width } = useWindowDimensions();
   const [filtro, setFiltro] = useState('Todos');
-  const mostrados = useMemo(() => productos.filter((p) => filtro === 'Todos' || p.categoria === filtro), [filtro]);
+  const [busqueda, setBusqueda] = useState('');
+  const [orden, setOrden] = useState('destacados');
+  const mostrados = useMemo(() => filtrarProductos(productos, busqueda, filtro, orden), [busqueda, filtro, orden]);
   const anchoArea = Math.min(width - 36, 1120 - 36);
-  const columnas = anchoArea >= 850 ? 4 : anchoArea >= 560 ? 3 : 2;
+  const columnas = anchoArea >= 850 ? 4 : anchoArea >= 560 ? 3 : anchoArea >= 340 ? 2 : 1;
   const anchoCard = (anchoArea - (columnas - 1) * 12) / columnas;
 
   return <>
@@ -21,7 +25,7 @@ export default function Catalogo({ onRegistrarse }) {
         <Text style={[estilos.heroTitulo, width < 600 && { fontSize: 31 }]}>Tu mundo tech.{'\n'}Tu espacio ideal.</Text>
         <Text style={estilos.heroDescripcion}>Explora artículos de tecnología y hogar en un mismo lugar. Sin necesidad de crear una cuenta.</Text>
         <Pressable onPress={onRegistrarse} style={estilos.boton} accessibilityRole="button">
-          <Text style={estilos.botonTexto}>Crear una cuenta  →</Text>
+          <Text style={estilos.botonTexto}>{autenticado ? 'Ver mi perfil  →' : 'Crear una cuenta  →'}</Text>
         </Pressable>
       </View>
       {width >= 600 && <View style={estilos.decoracion}>
@@ -30,16 +34,25 @@ export default function Catalogo({ onRegistrarse }) {
       </View>}
     </View>
     <View style={estilos.meta}>
-      <View><Text style={estilos.titulo}>Descubre nuestros productos</Text><Text style={estilos.bajada}>Encuentra inspiración para tu día a día.</Text></View>
+      <View style={estilos.metaTitulo}><Text style={estilos.titulo}>Descubre nuestros productos</Text><Text style={estilos.bajada}>Encuentra inspiración para tu día a día.</Text></View>
       <Text style={estilos.contador}>{mostrados.length} productos</Text>
+    </View>
+    <View style={estilos.busqueda}>
+      <Text style={estilos.bajada}>Buscar por nombre</Text>
+      <TextInput value={busqueda} onChangeText={setBusqueda} placeholder="¿Qué estás buscando?" accessibilityLabel="Buscar productos por nombre" style={estilos.input} autoCorrect={false} />
     </View>
     <View style={estilos.filtros}>
       {filtros.map((item) => <Pressable key={item} onPress={() => setFiltro(item)}
-        style={[estilos.filtro, filtro === item && estilos.filtroActivo]}
+        style={({ pressed }) => [estilos.filtro, filtro === item && estilos.filtroActivo, pressed && { opacity: 0.7 }]}
         accessibilityRole="button" accessibilityState={{ selected: filtro === item }}>
         <Text style={[estilos.filtroTexto, filtro === item && estilos.filtroTextoActivo]}>{item}</Text>
       </Pressable>)}
     </View>
+    <Text style={estilos.bajada}>Ordenar por</Text>
+    <View style={estilos.orden}>
+      {[['destacados', 'Destacados'], ['asc', 'Menor precio'], ['desc', 'Mayor precio']].map(([id, titulo]) => <Pressable key={id} onPress={() => setOrden(id)} accessibilityRole="button" accessibilityState={{ selected: orden === id }} style={({ pressed }) => [estilos.filtro, orden === id && estilos.filtroActivo, pressed && { opacity: 0.7 }]}><Text style={[estilos.filtroTexto, orden === id && estilos.filtroTextoActivo]}>{titulo}</Text></Pressable>)}
+    </View>
+    {!mostrados.length && <View style={estilos.vacio}><Text style={estilos.titulo}>No encontramos productos</Text><Text style={estilos.bajada}>Prueba con otro nombre o cambia la categoría.</Text><Boton titulo="Limpiar búsqueda y filtros" secundario onPress={() => { setBusqueda(''); setFiltro('Todos'); setOrden('destacados'); }} /></View>}
     <View style={estilos.grid}>
       {mostrados.map((producto) => <ProductoCard key={producto.id} producto={producto} ancho={anchoCard} />)}
     </View>
@@ -62,14 +75,19 @@ const estilos = StyleSheet.create({
   decoracionTexto: { color: colores.marino, fontWeight: '900', fontSize: 92 },
   decoracionSub: { color: '#9AAEC7', fontSize: 11, letterSpacing: 4, fontWeight: '900', marginTop: 7 },
   meta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 8, marginTop: 35 },
+  metaTitulo: { maxWidth: '100%', flexShrink: 1 },
   titulo: { fontSize: 24, fontWeight: '900', color: colores.marino },
   bajada: { fontSize: 13, color: colores.secundario, marginTop: 7 },
   contador: { fontSize: 12, color: colores.secundario, fontWeight: '800' },
   filtros: { flexDirection: 'row', gap: 9, marginTop: 22, marginBottom: 18, flexWrap: 'wrap' },
-  filtro: { borderWidth: 1, borderColor: colores.linea, backgroundColor: '#FFFFFF', paddingHorizontal: 17, paddingVertical: 10, borderRadius: 11 },
+  filtro: { borderWidth: 1, borderColor: colores.linea, backgroundColor: '#FFFFFF', paddingHorizontal: 17, paddingVertical: 13, borderRadius: 11 },
   filtroActivo: { backgroundColor: colores.marino, borderColor: colores.marino },
   filtroTexto: { fontSize: 12, color: colores.secundario, fontWeight: '800' },
   filtroTextoActivo: { color: '#FFFFFF' },
+  busqueda: { marginTop: 20, gap: 9 },
+  input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colores.linea, padding: 14, borderRadius: 12, fontSize: 15, color: colores.marino, minHeight: 48 },
+  orden: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10, marginBottom: 22 },
+  vacio: { padding: 24, backgroundColor: '#FFFFFF', borderRadius: 18, gap: 14 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'stretch' },
   nota: { fontSize: 11, color: colores.secundario, marginTop: 22 }
 });
