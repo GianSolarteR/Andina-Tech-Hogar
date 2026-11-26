@@ -1,15 +1,12 @@
-import { useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../config/supabase';
 
-export default function useAuth() {
+function useSesionSupabase() {
   const [sesion, setSesion] = useState(null);
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(Boolean(supabase));
 
   useEffect(() => {
-    if (!supabase) {
-      setCargando(false);
-      return;
-    }
+    if (!supabase) return;
     let activo = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_evento, nuevaSesion) => {
       if (activo) {
@@ -29,4 +26,15 @@ export default function useAuth() {
   }, []);
 
   return { sesion, usuario: sesion?.user || null, cargando };
+}
+
+const AuthContext = createContext(null);
+export function AuthProvider({ children }) {
+  const estado = useSesionSupabase();
+  return <AuthContext.Provider value={estado}>{children}</AuthContext.Provider>;
+}
+export default function useAuth() {
+  const estado = useContext(AuthContext);
+  if (!estado) throw new Error('useAuth requiere AuthProvider.');
+  return estado;
 }

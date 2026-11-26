@@ -1,7 +1,8 @@
 import { supabase } from '../config/supabase';
+import { exigirUsuario } from './perfilesService';
 
 export async function consultarUsuarios() {
-  if (!supabase) throw new Error('Supabase no está configurado.');
+  await exigirUsuario();
   const { data, error } = await supabase
     .from('profiles')
     .select('id, nombre_completo, correo, telefono, rol, created_at')

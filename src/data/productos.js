@@ -43,4 +43,4 @@ export const productos = [
   }
 ];
 
-export const formatoPrecio = (cantidad) => '$ ' + Number(cantidad).toLocaleString('es-CO');
+export const formatoPrecio = (cantidad) => '$ ' + Number(cantidad).toLocaleString('es-CO') + ' COP';

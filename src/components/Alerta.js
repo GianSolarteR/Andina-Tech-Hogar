@@ -5,7 +5,7 @@ import { colores } from '../styles/theme';
 export default function Alerta({ texto, tipo = 'error' }) {
   if (!texto) return null;
   const exito = tipo === 'exito';
-  return <View style={[estilos.caja, { backgroundColor: exito ? colores.positivoFondo : colores.negativoFondo, borderColor: exito ? '#BDE2CC' : '#F6C8CC' }]}>
+  return <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={[estilos.caja, { backgroundColor: exito ? colores.positivoFondo : colores.negativoFondo, borderColor: exito ? '#BDE2CC' : '#F6C8CC' }]}>
     <Text style={[estilos.texto, { color: exito ? colores.positivo : colores.negativo }]}>{texto}</Text>
   </View>;
 }
